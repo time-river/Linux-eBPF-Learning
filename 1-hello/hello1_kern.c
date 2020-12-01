@@ -4,11 +4,13 @@
 #include <bpf/bpf_helpers.h>
 
 #ifdef __x86_64__
-#define SYSCALL(SYS) "__x64_" #SYS
+#  define SYSCALL(SYS) "__x64_" #SYS
+#elif defined(__aarch64__)
+#  define SYSCALL(SYS) "__arm64_" #SYS
 #elif defined(__s390x__)
-#define SYSCALL(SYS) "__s390x_" #SYS
+#  define SYSCALL(SYS) "__s390x_" #SYS
 #else
-#define SYSCALL(SYS)  #SYS
+#  define SYSCALL(SYS)  #SYS
 #endif
 
 SEC("kprobe/" SYSCALL(sys_clone))

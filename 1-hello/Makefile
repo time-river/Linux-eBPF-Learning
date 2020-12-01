@@ -1,5 +1,6 @@
 CLANG := clang
-BPF_EXTRA_FLAGS := -fno-stack-protector -g
+NOSTDINC_FLAGS = -nostdinc -isystem $(shell $(CC) -print-file-name=include)
+BPF_EXTRA_FLAGS := -fno-stack-protector -g $(NOSTDINC_FLAGS) -I/usr/include
 LLC := llc
 LLC_EXTRA_FLAGS := -mattr=dwarfris
 
@@ -17,5 +18,10 @@ hello: hello_user.o ../lib/bpf_load.o
 	$(CC) -o $@ $< $(LDFLAGS) ../lib/bpf_load.o
 
 hello2_kern.o: hello2_kern.c
+	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
+		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
+
+
+check_kern.o: check_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
