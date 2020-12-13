@@ -25,3 +25,7 @@ hello2_kern.o: hello2_kern.c
 hello3_kern.o: hello3_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
+
+hello4_kern.o: hello4_kern.c
+	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
+		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@

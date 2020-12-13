@@ -548,7 +548,7 @@ static int do_load_bpf_file(const char *path, fixup_map_cb fixup_map)
 		if (get_sec(elf, i, &ehdr, &shname, &shdr, &data))
 			continue;
 
-		if (0) /* helpful for llvm debugging */
+		if (1) /* helpful for llvm debugging */
 			printf("section %d:%s data %p size %zd link %d flags %d\n",
 			       i, shname, data->d_buf, data->d_size,
 			       shdr.sh_link, (int) shdr.sh_flags);
