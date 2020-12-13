@@ -10,11 +10,11 @@ Linux存在众多tracing tools，比如ftrace、perf，他们可用于内核的�
 
 [Linux tracing systems & how they fit together][2]一文将这一系列概念划分为三类：
 
-1. 数据获取方式（Data Sources）
-2. 数据传递手段（Mechanisms for Collection your Delicious Data）
+1. 数据采集方法（Data Sources）
+2. 数据的加工与传递手段（Mechanisms for Collection your Delicious Data）
 3. 用户前端工具（User Frontends）
 
-借用这三类名词，我将这一系列概念的划分稍微与上述不同。
+借用这三类名词，我将这一系列概念的划分稍微与上文中不同。
 
 ### Data Sources
 
@@ -38,11 +38,13 @@ tracepoint用于kernel中，分为static tracepoint与dynamic tracepoint。用�
 
 Keywords: **ftrace**, **tracer**, **trace events**, **tracepoint-based events**, **kprobe-based events**, **uprobe-based events**, **perf events**, **eBPF**
 
-ftrace，更精确地称呼为function tracer，能够用来追踪函数的调用情况。在历史上function tracer由ftrace重命名而来，而ftrace发展发展成为一种能够支持多类tracing utilities的框架，它基于dynamic tracepoint，由ftrace ring buffer、`tracefs`构成该框架的核心。在ftrace框架下实现的各类tracer，具体实现了tracing的行为，用于探测kernel中发生了什么，他们使用`trace_print()`将探测得到的数据写入ftrace ring buffer中，用户则可以通过读取tracefs中的`trace`或`trace_pipe`得到相关的数据。狭义上的tracer指的是tracefs中文件`available_tracers`所显示的那些，比如可绘制出函数调用关系的[function graph tracer][5]；广义上的tracer是使用了tracefs的events，比如kprobe-based events。
+ftrace，更精确地称呼为function tracer，能够用来追踪函数的调用情况。在历史上function tracer由ftrace重命名而来，而ftrace发展发展成为一种能够支持多类tracing utilities的框架，它基于dynamic tracepoint，由ftrace ring buffer、`tracefs`构成该框架的核心。在ftrace框架下实现的各类tracer，具体实现了tracing的行为，用于探测kernel中发生了什么，他们使用`trace_print()`将探测得到的数据写入ftrace ring buffer中，用户则可以通过读取tracefs中的`trace`或`trace_pipe`得到相关的数据。
 
-trace events是kernel中预定义的、用于传递tracing到的数据的一种行为，利用了tracefs向用户传递数据。有使用了static tracepoint的tracepoint-based events、使用了kprobe的kprobe-based events、使用了uprobe的uprobe-based events三类
+狭义上的tracer指的是tracefs中文件`available_tracers`所显示的那些，比如可绘制出函数调用关系的[function graph tracer][5]；广义上的tracer，包含了各类加工数据的方法，比如trace events，eBPF tracer。
 
-perf events（performance events）采集到的数据能够用来衡量性能，它最初名为performance counter，使用的是PMU获取数据，后来它能够利用的数据获取方式不再局限为PMU，亦发展称为一种框架，实现了类似trace ring buffer的perf ring buffer，perf ring buffer种的数据能够通过`perf_event_open()`系统调用传递给用户。当前它包括使用硬件PMC实现的hardware events、基于kernel counter实现的software events、使用了tracepoint的tracepoint events。
+trace events是kernel中预定义的、用于传递tracing到的数据的一种行为，利用了tracefs向用户传递数据。有使用了static tracepoint的tracepoint-based events、使用了kprobe的kprobe-based events、使用了uprobe的uprobe-based events三类，后两种合称为dynamic events。
+
+不同于trace events，使用perf events（performance events）采集到的数据能够用来衡量性能，它最初名为performance counter，使用的是PMU获取数据，后来它能够利用的数据获取方式不再局限为PMU，亦发展称为一种框架，实现了类似trace ring buffer的perf ring buffer，perf ring buffer种的数据能够通过`perf_event_open()`系统调用传递给用户。当前它包括使用硬件PMC实现的hardware events、基于kernel counter实现的software events、使用了tracepoint的tracepoint events。
 
 kprobe提供了`register_kprobe()`系列API，允许用户编写kernel modules、注册hook点的pre-handler与post-handler回调函数用以处理捕获到的数据。uprobe虽然也有类似kprobe的`register_uprobe_event()`API，但它不对用户暴露。
 
@@ -60,15 +62,18 @@ tracing有三类用于kernelspace、userspace之间通信的方法：
 
 Keywords: **systemtap (stap)**, **trace-cmd**, **perf**, **LLTng**, **Dtrace**, **bcc**, **bpftrace**
 
-为了便于使用，在这三类kernelspace与userspace之间通信机制+四类捕获数据的机制基础上，衍生出一系列易于用户使用的前端工具（悄悄地说：我也没搞明白他们的技术原理，所以放图好了）：
+为了便于使用，在上述数据采集方法与加工方式的基础上，衍生出一系列易于用户使用的前端工具（悄悄地说：我也没搞明白他们的技术原理，所以放图好了）：
 
-![Commonalities in Linux tracing systems](https://static.lwn.net/images/2019/osseu-commonality.png)
+![Instrumentation Methods for Online Analytics](/pics/Instrumentation-Methods-for-Online-Analytics.png)
+
+Note: 图来自[LinucConJapan2015: Dynamic Probes for LinuxRecent updates][7]，Interface一栏缺少了eBPF maps
 
 ## 总结
 
 - kprobe、uprobe能够hook函数代码中的任意位置，一个用于kernel，一个用于application
 - tracepoint是埋在代码中的静态hook点
 - ftrace是框架，使用dynamic tracepoint，利用tracer处理数据，使用tracefs输出数据
+- 广义上的tracer是数据加工的方式
 - trace events是一种输出捕获得到的数据的模板，使用tracefs输出数据，根据数据的获取方式分为tracepoint-based events、kprobe-based events、uprobe-based events三类
 - perf events采集到的数据用于衡量性能，亦发展称为一种框架
 - USDT是用来trace ELF binary application的，用来trace解释型语言的是dynamic USDT
@@ -79,6 +84,7 @@ Keywords: **systemtap (stap)**, **trace-cmd**, **perf**, **LLTng**, **Dtrace**, 
 2. [Julia Evans Blog: Linux tracing systems & how they fit together][2]
 3. [Slides: Unified Tracing Platform Bringing tracing together][3]
 4. [Linux wiki: Linux kernel profling with perf][6]
+5. [LinucConJapan2015: Dynamic Probes for LinuxRecent updates][7]
 
 [1]: https://lwn.net/Articles/803347/
 [2]: https://jvns.ca/blog/2017/07/05/linux-tracing-systems/
@@ -86,4 +92,4 @@ Keywords: **systemtap (stap)**, **trace-cmd**, **perf**, **LLTng**, **Dtrace**, 
 [4]: https://github.com/torvalds/linux/commit/a871bd33a6c0bc86fb47cd02ea2650dd43d3d95f
 [5]: https://github.com/torvalds/linux/blob/v5.9/kernel/trace/trace_functions_graph.c#L1281
 [6]: https://perf.wiki.kernel.org/index.php/Tutorial
-
+[7]: https://events.static.linuxfound.org/sites/events/files/slides/LinuxConJapan2015-DynamicProbes.pdf
