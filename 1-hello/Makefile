@@ -1,35 +1,50 @@
 CLANG := clang
 NOSTDINC_FLAGS = -nostdinc -isystem $(shell $(CC) -print-file-name=include)
-BPF_EXTRA_FLAGS := -fno-stack-protector $(NOSTDINC_FLAGS) -I/usr/include -g
+BPF_EXTRA_FLAGS := $(NOSTDINC_FLAGS) -I/usr/include
 LLC := llc
-LLC_EXTRA_FLAGS := -mattr=dwarfris
-
-ARCH := __x86_64__
-
-hello1_kern.o: hello1_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
-
-hello_kern_v2.1.o: hello_kern_v2.1.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
 
 LDFLAGS := $(shell pkg-config --libs libbpf)	\
 			$(shell pkg-config --libs libelf)	\
 			$(shell pkg-config --libs zlib)
 
-hello: hello_user.o ../lib/bpf_load.o
-	$(CC) -o $@ $< $(LDFLAGS) ../lib/bpf_load.o
+ARCH := __x86_64__
 
-hello2_kern.o: hello2_kern.c
+hello_kern.o: hello_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
 
+hello: hello_user.o bpf_load.o
+	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
 
-hello3_kern.o: hello3_kern.c
+openat1_kern.o: openat1_kern.c
+	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
+		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
+
+openat2_kern.o: openat2_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
 
-hello4_kern.o: hello4_kern.c
+openat3_kern.o: openat3_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
+map1_kern.o: map1_kern.c
+	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
+		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
+
+map1: map1_user.o bpf_load.o
+	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
+
+map2_kern.o: map2_kern.c
+	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
+		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@ -mattr=dwarfris
+
+map2: map2_user.o bpf_load.o
+	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
+
+all: hello hello_kern.o openat1_kern.o openat2_kern.o openat3_kern.o	\
+	map1_kern.o map1 map2_kern.o map2
+
+clean:
+	rm -rf *.o hello map1 map2
+
+.PYONY: all clean

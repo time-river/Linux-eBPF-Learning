@@ -5,7 +5,7 @@
 #include <time.h>
 #include <errno.h>
 
-#include "../lib/bpf_load.h"
+#include "bpf_load.h"
 
 #define MAX_FILENAME_LEN 256
 

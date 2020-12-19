@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 
+#include <linux/ptrace.h>
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
-#include <linux/ptrace.h>
 
 SEC("kprobe/sys_openat")
 int hello(struct pt_regs *ctx) {

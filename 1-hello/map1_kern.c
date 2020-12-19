@@ -10,7 +10,7 @@
 #define MAX_LENGTH	16
 #define MAX_ENTRIES	16
 
-struct msg_t {
+struct msg {
 	unsigned int tgid;
 	unsigned int pid;
 	char comm[MAX_LENGTH];
@@ -20,7 +20,7 @@ struct msg_t {
 struct bpf_map_def SEC("maps") map = {
 	.type = BPF_MAP_TYPE_HASH,
 	.key_size = sizeof(int),
-	.value_size = sizeof(struct msg_t),
+	.value_size = sizeof(struct msg),
 	.max_entries = MAX_ENTRIES,
 };
 
@@ -29,7 +29,7 @@ int hello(struct pt_regs *ctx) {
 	int key = bpf_get_smp_processor_id() % MAX_ENTRIES;
 	unsigned long cts = bpf_ktime_get_ns();
 	unsigned long id = bpf_get_current_pid_tgid();
-	struct msg_t *val, init_val;
+	struct msg *val, init_val;
 	char msg[MAX_LENGTH] = "Hello eBPF!";
 
 	val = bpf_map_lookup_elem(&map, &key);
