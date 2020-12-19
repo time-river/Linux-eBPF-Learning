@@ -12,7 +12,7 @@
 #define MAX_LENGTH	16
 #define MAX_ENTRIES	16
 
-struct msg_t {
+struct msg {
 	unsigned int tgid;
 	unsigned int pid;
 	char comm[MAX_LENGTH];
@@ -20,7 +20,7 @@ struct msg_t {
 };
 
 int main(int argc, char *argv[]) {
-	struct msg_t msg = {0};
+	struct msg msg = {0};
 
 	if (argc != 2) {
 		fprintf(stdout, "Usage: %s <eBPF program>\n", argv[0]);
