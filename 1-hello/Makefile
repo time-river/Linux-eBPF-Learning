@@ -27,6 +27,11 @@ openat2_kern.o: openat2_kern.c
 openat3_kern.o: openat3_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
+
+openat4_kern.o: openat4_kern.c
+	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
+		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
+
 map1_kern.o: map1_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@

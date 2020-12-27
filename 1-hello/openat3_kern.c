@@ -1,25 +1,20 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 
+#include <linux/ptrace.h>
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
+#include <bpf/bpf_tracing.h>
+#include <bpf/bpf_core_read.h>
 
-struct syscalls_enter_openat_args {
-	unsigned short common_type;
-	unsigned char common_flags;
-	unsigned char common_preempt_count;
-	int common_pid;
-	long syscall_nr;
-	long dfd;
-	long filename_ptr;
-	long flags;
-	long mode;
-};
+SEC("kprobe/sys_openat")
+int hello(struct pt_regs *ctx) {
+	char fmt[] = "@dirfd='%d' @pathname='%s' @flags=0x%x";
+	struct pt_regs *real_regs = (struct pt_regs *)PT_REGS_PARM1_CORE(ctx);
+	int dirfd = PT_REGS_PARM1_CORE(real_regs);
+	char *pathname = (char *)PT_REGS_PARM2_CORE(real_regs);
+	unsigned long flags = PT_REGS_PARM3_CORE(real_regs);
 
-SEC("tracepoint/syscalls/sys_enter_openat")
-int hello(struct syscalls_enter_openat_args *ctx) {
-	char fmt[] = "@dirfd='%d' @pathname='%s'";
-
-	bpf_trace_printk(fmt, sizeof(fmt), ctx->dfd, (char *)ctx->filename_ptr);
+	bpf_trace_printk(fmt, sizeof(fmt), dirfd, pathname, flags);
 
 	return 0;
 }
