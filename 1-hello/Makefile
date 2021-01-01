@@ -17,7 +17,7 @@ hello: hello_user.o bpf_load.o
 	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
 
 openat1_kern.o: openat1_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
+	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
 
 openat2_kern.o: openat2_kern.c
@@ -25,7 +25,7 @@ openat2_kern.o: openat2_kern.c
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
 
 openat3_kern.o: openat3_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
+	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
 
 openat4_kern.o: openat4_kern.c
@@ -46,7 +46,11 @@ map2_kern.o: map2_kern.c
 map2: map2_user.o bpf_load.o
 	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
 
-all: hello hello_kern.o openat1_kern.o openat2_kern.o openat3_kern.o	\
+map3_kern.o: map3_kern.c
+	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
+		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@ -mattr=dwarfris
+
+all: hello hello_kern.o openat1_kern.o openat2_kern.o openat3_kern.o openat4_kern.o	\
 	map1_kern.o map1 map2_kern.o map2
 
 clean:
