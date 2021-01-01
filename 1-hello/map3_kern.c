@@ -2,6 +2,7 @@
 
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
+#include <bpf/bpf_core_read.h>
 
 #ifndef INT_MAX
 # define INT_MAX	((1l << 32) - 1)
@@ -33,31 +34,41 @@ struct msg {
 	char file[MAX_LENGTH];
 };
 
-// The value size of `BPF_MAP_TYPE_PERF_EVENT_ARRAY` is only `sizeof(u32)`
 struct {
-	__uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-	__type(key, int);
-	__type(value, struct msg);
-	/* for perf_event_array, it isn't necessary to set max entries
-	 * parameter.
-	 */
-} perf_map SEC(".maps");
+	__uint(type, BPF_MAP_TYPE_RINGBUF);
+	__uint(max_entries, 1<<12); // need page align
+} ringbuf SEC(".maps");
 
 static int id = -1;
 
-SEC("tracepoint/syscalls/sys_enter_openat")
+//SEC("tracepoint/syscalls/sys_enter_openat")
+SEC("tp/syscalls/sys_enter_openat")
 int hello(struct syscalls_enter_openat_args *ctx) {
-	struct msg val = {0};
+	struct msg *val;
 
-	id = (id + 1) % INT_MAX;
-	val.id = id;
-	val.pid = ctx->common_pid;
-	val.flags = ctx->flags;
-	bpf_get_current_comm(val.comm, sizeof(val.comm));
-	memcpy(val.file, (void *)ctx->filename_ptr, sizeof(val.file));
+	val = bpf_ringbuf_reserve(&ringbuf, sizeof(*val), 0);
+	if (!val)
+		goto out;
 
-	bpf_perf_event_output(ctx, &perf_map, 0, &val, sizeof(val));
+	val->id = id = (id + 1) % INT_MAX;
+	/* can't use `PROBE_CORE_READ()` because the `typeof(ctx)` is defined by
+	 * ourself.
+	 *
+	 * access rules: kernel/bpf/bpf_trace.c
+	 *   func: tp_prog_is_valid_access()
+	 *           if (off < sizeof(void *) || off >= PERF_MAX_TRACE_SIZE)
+	 *             return false;
+	 */
+	// we can't access it directly because of `sizeof(ctx->common_pid < sizeof(void *)`
+	bpf_probe_read_kernel(&val->pid, sizeof(val->pid), &ctx->common_pid);
+	// we can access it directly because of `size(ctx->flags) == sizeof(void *)`
+	val->flags = ctx->flags;
+	bpf_get_current_comm(val->comm, sizeof(val->comm));
+	bpf_probe_read_user_str(val->file, sizeof(val->file), (void *)ctx->filename_ptr);
 
+	bpf_ringbuf_output(&ringbuf, val, sizeof(*val), 0);
+	bpf_ringbuf_discard(val, 0);
+out:
 	return 0;
 }
 

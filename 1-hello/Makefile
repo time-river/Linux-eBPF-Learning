@@ -50,10 +50,14 @@ map3_kern.o: map3_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@ -mattr=dwarfris
 
+map3: map3_kern.o
+	bpftool gen skeleton map3_kern.o > map3_kern.skel.h
+	$(CC) -o $@ map3.c -lbpf
+
 all: hello hello_kern.o openat1_kern.o openat2_kern.o openat3_kern.o openat4_kern.o	\
-	map1_kern.o map1 map2_kern.o map2
+	map1_kern.o map1 map2_kern.o map2 map3
 
 clean:
-	rm -rf *.o hello map1 map2
+	rm -rf *.o hello map1 map2 map3
 
 .PYONY: all clean
