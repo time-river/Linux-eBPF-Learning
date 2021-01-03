@@ -20,16 +20,10 @@ struct msg {
 
 static struct map3_kern *skel;
 static struct ring_buffer *rb;
+static bool stop;
 
-/* TODO: There are something errors during exiting by sigint signal. */
 static void sigint_handler(int sig) {
-	if (rb != NULL) {
-		ring_buffer__consume(rb);
-		ring_buffer__free(rb);
-	}
-
-	if (skel->links.hello != NULL)
-		bpf_link__destroy(skel->links.hello);
+	stop = true;
 }
 
 static int print_bpf_output(void *ctx, void *data, size_t size) {
@@ -86,7 +80,13 @@ int main(int argc, char *argv[]) {
 
 	while (true) {
 		ring_buffer__poll(rb, 1000);
+		if (stop)
+			break;
 	}
+
+	map3_kern__detach(skel);
+	ring_buffer__free(rb);
+	bpf_link__destroy(skel->links.hello);
 cleanup:
 	map3_kern__destroy(skel);
 	return 0;

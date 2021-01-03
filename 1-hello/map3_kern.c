@@ -59,8 +59,7 @@ int hello(struct syscalls_enter_openat_args *ctx) {
 	 *           if (off < sizeof(void *) || off >= PERF_MAX_TRACE_SIZE)
 	 *             return false;
 	 */
-	// we can't access it directly because of `sizeof(ctx->common_pid < sizeof(void *)`
-	bpf_probe_read_kernel(&val->pid, sizeof(val->pid), &ctx->common_pid);
+	val->pid = bpf_get_current_pid_tgid() & 0xffffffff;
 	// we can access it directly because of `size(ctx->flags) == sizeof(void *)`
 	val->flags = ctx->flags;
 	bpf_get_current_comm(val->comm, sizeof(val->comm));
