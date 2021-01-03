@@ -1,63 +1,30 @@
 CLANG := clang
-NOSTDINC_FLAGS = -nostdinc -isystem $(shell $(CC) -print-file-name=include)
-BPF_EXTRA_FLAGS := $(NOSTDINC_FLAGS) -I/usr/include
 LLC := llc
 
-LDFLAGS := $(shell pkg-config --libs libbpf)	\
-			$(shell pkg-config --libs libelf)	\
-			$(shell pkg-config --libs zlib)
+LIBBPF := $(shell pkg-config --exists libbpf; echo $$?)
+LIBELF := $(shell pkg-config --exists libelf; echo $$?)
 
-ARCH := __x86_64__
+ifneq ($(LIBBPF),0)
+  $(error "no libbpf, install libbpf-dev or libbpf-devel")
+endif
+
+ifneq ($(LIBELF),0)
+  $(error "no libelf, install libelf-dev or libelf-devel")
+endif
+
+.PYONY: all clean
+
+all: hello hello_kern.o
+
+clean:
+	rm -rf *.o hello
+
+LDFLAGS := $(shell pkg-config --libs libbpf)	\
+			$(shell pkg-config --libs libelf)
 
 hello_kern.o: hello_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
+	$(CLANG) -O2 -emit-llvm -c $< -o - | \
+		$(LLC) -march=bpf -filetype=obj -o $@
 
 hello: hello_user.o bpf_load.o
 	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
-
-openat1_kern.o: openat1_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
-
-openat2_kern.o: openat2_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
-
-openat3_kern.o: openat3_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
-
-openat4_kern.o: openat4_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
-
-map1_kern.o: map1_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
-
-map1: map1_user.o bpf_load.o
-	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
-
-map2_kern.o: map2_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@ -mattr=dwarfris
-
-map2: map2_user.o bpf_load.o
-	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
-
-map3_kern.o: map3_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@ -mattr=dwarfris
-
-map3: map3_kern.o
-	bpftool gen skeleton map3_kern.o > map3_kern.skel.h
-	$(CC) -o $@ map3.c -lbpf
-
-all: hello hello_kern.o openat1_kern.o openat2_kern.o openat3_kern.o openat4_kern.o	\
-	map1_kern.o map1 map2_kern.o map2 map3
-
-clean:
-	rm -rf *.o hello map1 map2 map3
-
-.PYONY: all clean
