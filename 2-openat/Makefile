@@ -26,10 +26,6 @@ clean:
 
 .PYONY: all clean
 
-hello_kern.o: hello_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
-
 hello: hello_user.o bpf_load.o
 	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
 

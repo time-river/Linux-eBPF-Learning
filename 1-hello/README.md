@@ -99,7 +99,7 @@ eBPF程序并不关心如何执行到它这里的，这些是kprobe、tracepoint
 - 对于loop，v5.3及之后也只是允许有限循环状态的loop[[7]][[8]]
 - 它不支持BPF-to-BPF call，v5.10及之后也只是在使用libbpf的情况下允许BPF-to-BPF call（这些call是在ELF解析时候完成的）
 
-eBPF在载入程序时会进行模拟执行、检查，入口在`bpf_check()`[[9]]。对于内存访问，会使用`check_mem_access()`[[10]]进行检查。eBPF支持的各类hook方法都实现了`struct bpf_verifier_ops`，其成员`is_valid_access`是函数指针，规定了各类hook方法直接允许访问的内存范围，超出该范围的必须使用`bpf_probe_read_{kernel,user}()`进行访问。某些CPU架构下对不同特权等级下的程序能够访问的内存范围使用`thread_info>addr_limit`参数进行了区分，在v5.5之前，`bpf_probe_read()`只能访问内核空间的内存，因此引入了`bpf_probe_read_user()`，`bpf_probe_read()`被重命名为`bpf_probe_read_kernel()`，为了保持兼容`bpf_probe_read()`作为`bpf_probe_read_kernel()`的别名存在。
+eBPF在载入程序时会进行模拟执行、检查，入口在`bpf_check()`[[9]]。对于内存访问，会使用`check_mem_access()`[[10]]进行检查。eBPF支持的各类hook方法都实现了`struct bpf_verifier_ops`，其成员`is_valid_access`是函数指针，规定了各类hook方法直接允许访问的内存范围，超出该范围的必须使用`bpf_probe_read_{kernel,user}()`进行访问。Linux对不同特权等级下程序能够访问的内存空间进行了区分，在v5.5之前，`bpf_probe_read()`只能访问内核空间的内存，因此引入了`bpf_probe_read_user()`，`bpf_probe_read()`被重命名为`bpf_probe_read_kernel()`，为了保持兼容`bpf_probe_read()`作为`bpf_probe_read_kernel()`的别名存在。
 
 那么，载入kernel的eBPF程序是如何执行、以及进行BPF helper func调用的呢？
 
