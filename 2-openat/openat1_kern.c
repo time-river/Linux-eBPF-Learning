@@ -11,13 +11,8 @@ int hello(struct pt_regs *ctx) {
 	const int dirfd = PT_REGS_PARM1(ctx);
 	const char *pathname = (char *)PT_REGS_PARM2(ctx);
 	char fmt[] = "@dirfd='%d' @pathname='%s'";
-	int fd;
-	char *msg;
 
-	bpf_probe_read_kernel(&fd, sizeof(fd), &dirfd);
-	bpf_probe_read_kernel(&msg, sizeof(msg), &pathname);
-
-	bpf_trace_printk(fmt, sizeof(fmt), dirfd, msg);
+	bpf_trace_printk(fmt, sizeof(fmt), dirfd, pathname);
 
 	return 0;
 }
