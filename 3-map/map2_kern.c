@@ -23,8 +23,11 @@ struct msg {
 struct bpf_map_def SEC("maps") map = {
 	.type = BPF_MAP_TYPE_PERF_EVENT_ARRAY,
 	.key_size = sizeof(int),
+	 /* `value_size` must be `sizeof(u32)`, which stand for file descriptor
+	  * that each cpu has one.
+	  */
 	.value_size = sizeof(u32),
-	.max_entries = 2,
+	.max_entries = 0, // This item is useless
 };
 
 SEC("kprobe/vfs_write")
