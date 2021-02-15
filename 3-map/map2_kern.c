@@ -2,49 +2,43 @@
 
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
+#include <bpf/bpf_tracing.h>
+#include <bpf/bpf_core_read.h>
+#include <linux/ptrace.h>
 
 #ifndef memcpy
 # define memcpy(dest, src, n)   __builtin_memcpy((dest), (src), (n))
 #endif
 
-#define MAX_LENGTH	16
-#define MAX_ENTRIES	16
+typedef __kernel_size_t size_t;
+typedef __kernel_loff_t loff_t;
+typedef __u32 u32;
 
 struct msg {
-	unsigned int tgid;
-	unsigned int pid;
-	char comm[MAX_LENGTH];
-	char msg[MAX_LENGTH];
+	char buf[32];
+	size_t count;
+	loff_t pos;
 };
 
-struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
-	__type(key, int);
-	__type(value, struct msg);
-	__uint(max_entries, MAX_ENTRIES);
-} map SEC(".maps");
+struct bpf_map_def SEC("maps") map = {
+	.type = BPF_MAP_TYPE_PERF_EVENT_ARRAY,
+	.key_size = sizeof(int),
+	.value_size = sizeof(u32),
+	.max_entries = 2,
+};
 
-SEC("kprobe/__x64_sys_clone")
+SEC("kprobe/vfs_write")
 int hello(struct pt_regs *ctx) {
-	int key = bpf_get_smp_processor_id() % MAX_ENTRIES;
-	unsigned long cts = bpf_ktime_get_ns();
-	unsigned long id = bpf_get_current_pid_tgid();
-	struct msg *val, init_val;
-	char msg[MAX_LENGTH] = "Hello eBPF!";
+	char *buf = (char *)PT_REGS_PARM2(ctx);
+	size_t count = PT_REGS_PARM3(ctx);
+	loff_t *pos = (loff_t *)PT_REGS_PARM4(ctx);
+	struct msg data = {0};
 
-	val = bpf_map_lookup_elem(&map, &key);
-	if (val) {
-		val->tgid = (id >> 32) & 0xffffffff;
-		val->pid = id & 0xffffffff;
-		bpf_get_current_comm(val->comm, sizeof(val->comm));
-		memcpy(val->msg, msg, MAX_LENGTH);
-	} else {
-		init_val.tgid = (id >> 32) & 0xffffffff;
-		init_val.pid = id & 0xffffffff;
-		bpf_get_current_comm(init_val.comm, sizeof(init_val.comm));
-		memcpy(init_val.msg, msg, MAX_LENGTH);
-		bpf_map_update_elem(&map, &key, &init_val, BPF_NOEXIST);
-	}
+	bpf_probe_read_user_str(data.buf, sizeof(data.buf)-1, buf);
+	data.count = count;
+	bpf_probe_read_kernel(&data.pos, sizeof(data.pos), pos);
+
+	bpf_perf_event_output(ctx, &map, 0, &data, sizeof(data));
 
 	return 0;
 }

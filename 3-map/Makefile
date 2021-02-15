@@ -19,9 +19,6 @@ LDFLAGS := $(shell pkg-config --libs libbpf)	\
 
 ARCH := __$(shell uname -m)__
 
-hello: hello_user.o bpf_load.o
-	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
-
 map1_kern.o: map1_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
 		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
@@ -31,22 +28,14 @@ map1: map1_user.o bpf_load.o
 
 map2_kern.o: map2_kern.c
 	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@ -mattr=dwarfris
+		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@
 
-map2: map2_user.o bpf_load.o
-	$(CC) -o $@ $< $(LDFLAGS) bpf_load.o
+map2: map2_user.o
+	$(CC) -o $@ $< $(LDFLAGS)
 
-map3_kern.o: map3_kern.c
-	$(CLANG) $(BPF_EXTRA_FLAGS) -g -D$(ARCH) -O2 -emit-llvm -c $< -o - | \
-		$(LLC) $(LLC_EXTRA_FLAGS) -march=bpf -filetype=obj -o $@ -mattr=dwarfris
-
-map3: map3_kern.o
-	bpftool gen skeleton map3_kern.o > $@_kern.skel.h
-	$(CC) -o $@ map3.c -lbpf
-
-all: hello map1_kern.o map1 map2_kern.o map2 map3
+all: map1_kern.o map1 map2_kern.o map2
 
 clean:
-	rm -rf *.o hello map1 map2 map3 *.skel.h
+	rm -rf *.o map1 map2
 
 .PYONY: all clean
