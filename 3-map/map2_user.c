@@ -8,10 +8,12 @@
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 
+#define MAX_LENGTH	16
+
 struct msg {
-	char buf[32];
-	size_t count;
-	loff_t pos;
+	__s32 seq;
+	__u64 cts;
+	__u8 comm[MAX_LENGTH];
 };
 
 static bool stop;
@@ -20,23 +22,11 @@ static void sigint_handler(int sig) {
 	stop = true;
 }
 
-static float time_get_ns(void)
-{
-	struct timespec ts;
-	float second;
-
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-
-	second = ts.tv_sec + (float)ts.tv_nsec / 1000000000ull;
-
-	return second;
-}
-
 static void print_bpf_output(void *ctx, int cpu, void *data, __u32 size) {
 	struct msg *msg = data;
 
-	fprintf(stdout, "%.4f: @buf=%s count=%zu %ld\n",
-		time_get_ns(), msg->buf, msg->count, msg->pos);
+	fprintf(stdout, "%.4f: @seq=%d @comm=%s\n",
+		 (float)msg->cts/1000000000ul, msg->seq, msg->comm);
 }
 
 int main(int argc, char *argv[]) {
@@ -108,6 +98,7 @@ int main(int argc, char *argv[]) {
 			break;
 	}
 
+	perf_buffer__free(pb);
 deattach:
 	bpf_link__destroy(link);
 unload:

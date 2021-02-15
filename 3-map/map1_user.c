@@ -7,20 +7,21 @@
 
 #include "bpf_load.h"
 
-#define MAX_FILENAME_LEN 256
-
 #define MAX_LENGTH	16
 #define MAX_ENTRIES	16
 
 struct msg {
-	unsigned int tgid;
-	unsigned int pid;
-	char comm[MAX_LENGTH];
-	char msg[MAX_LENGTH];
+	__s32 seq;
+	__u64 cts;
+	__u8 comm[MAX_LENGTH];
 };
 
 int main(int argc, char *argv[]) {
 	struct msg msg = {0};
+	int nr_cpus;
+
+	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+	nr_cpus = nr_cpus > MAX_ENTRIES ? MAX_ENTRIES : nr_cpus;
 
 	if (argc != 2) {
 		fprintf(stdout, "Usage: %s <eBPF program>\n", argv[0]);
@@ -38,12 +39,16 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	for (int key = 0; ; key = (key+1)%MAX_ENTRIES) {
+	for (int key = 0; ; key = (key+1)%nr_cpus) {
 		if (!bpf_map_lookup_elem(map_fd[0], &key, &msg)) {
-			fprintf(stdout, "@tgid='%u' @gid='%u' @comm='%s' @msg='%s'\n",
-				msg.tgid, msg.pid, msg.comm, msg.msg);
+			fprintf(stdout, "%.4f: @seq=%d @comm='%s'\n",
+				(float)msg.cts/1000000000ul, msg.seq, msg.comm);
+			msg.seq -= 1;
+			if (msg.seq <= 0)
+				bpf_map_delete_elem(map_fd[0], &key);
+			else
+				bpf_map_update_elem(map_fd[0], &key, &msg, BPF_EXIST);
 			memset(&msg, 0, sizeof(msg));
-			bpf_map_delete_elem(map_fd[0], &key);
 		}
 	}
 
