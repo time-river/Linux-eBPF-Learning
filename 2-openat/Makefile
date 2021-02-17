@@ -2,6 +2,7 @@ CLANG := clang
 NOSTDINC_FLAGS = -nostdinc -isystem $(shell $(CC) -print-file-name=include)
 BPF_EXTRA_FLAGS := $(NOSTDINC_FLAGS) -I/usr/include
 LLC := llc
+LLC_EXTRA_FLAGS :=
 
 LIBBPF := $(shell pkg-config --exists libbpf; echo $$?)
 LIBELF := $(shell pkg-config --exists libelf; echo $$?)
