@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 
-// TODO: call unknown#195896080 when enabling CO-RE
-#define BPF_NO_PRESERVE_ACCESS_INDEX
+//#define BPF_NO_PRESERVE_ACCESS_INDEX
 #include "vmlinux.h"
 
 #include <bpf/bpf_helpers.h>
@@ -21,7 +20,13 @@ struct syscalls_enter_sendmsg_args {
 
 #define MAX_LENGTH 16
 
-struct msg {
+/* undefine `BPF_NO_PRESERVE_ACCESS_INDEX` to enable CO-RE.
+ * However, there is `struct msg;` in vmlinux.h, so we can't
+ * use name `struct msg`, otherwise it will result in
+ * "call unknown#195896080" when use `bpf_get_current_comm()`
+ * and `bpf_probe_read_user().
+ */
+struct bpf_msg {
 	char comm[MAX_LENGTH];
 	struct sockaddr uservaddr;
 };
@@ -36,7 +41,7 @@ static int id = -1;
 //SEC("tracepoint/syscalls/sys_enter_openat")
 SEC("tp/syscalls/sys_enter_connect")
 int hello(struct syscalls_enter_sendmsg_args *ctx) {
-	struct msg *val;
+	struct bpf_msg *val;
 
 	val = bpf_ringbuf_reserve(&ringbuf, sizeof(*val), 0);
 	if (!val)

@@ -13,7 +13,7 @@
 
 #define MAX_LENGTH 16
 
-struct msg {
+struct bpf_msg {
         char comm[MAX_LENGTH];
 	struct sockaddr uservaddr;
 };
@@ -27,7 +27,7 @@ static void sigint_handler(int sig) {
 }
 
 static int print_bpf_output(void *ctx, void *data, size_t size) {
-	struct msg *val = data;
+	struct bpf_msg *val = data;
 	struct sockaddr_in *dest = (struct sockaddr_in *)&val->uservaddr;
 
 	fprintf(stdout, ">> [%s]: connect '%s:%d'\n",
