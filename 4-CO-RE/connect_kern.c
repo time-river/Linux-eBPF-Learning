@@ -7,10 +7,6 @@
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_tracing.h>
 
-#ifndef INT_MAX
-# define INT_MAX	((1l << 32) - 1)
-#endif
-
 struct syscalls_enter_sendmsg_args {
 	__u64 __pad[2];
 	__u64 fd;
@@ -36,8 +32,6 @@ struct {
 	__uint(max_entries, IOC_PAGE_SIZE); // need page align
 } ringbuf SEC(".maps");
 
-static int id = -1;
-
 //SEC("tracepoint/syscalls/sys_enter_openat")
 SEC("tp/syscalls/sys_enter_connect")
 int hello(struct syscalls_enter_sendmsg_args *ctx) {
@@ -51,8 +45,7 @@ int hello(struct syscalls_enter_sendmsg_args *ctx) {
 	bpf_probe_read_user(&val->uservaddr,
 			    sizeof(val->uservaddr), (void *)ctx->uservaddr);
 
-	bpf_ringbuf_output(&ringbuf, val, sizeof(*val), 0);
-	bpf_ringbuf_discard(val, 0);
+	bpf_ringbuf_submit(val, 0);
 out:
 	return 0;
 }
