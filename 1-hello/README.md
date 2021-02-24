@@ -1,20 +1,19 @@
 ---
-title: eBPF系列一: Hello eBPF
+title: eBPF系列一：Hello eBPF
 date: 2021-01-03 15:14:52
 tags: ["linux", "tracing tools", "eBPF"]
 ---
-# Hello eBPF
 
 Blog Post: [eBPF系列一: Hello eBPF](https://vvl.me/2021/01/eBPF-1-Hello-eBPF/)
 
 迫于Linux eBPF文档过少，我边学习边把对其的理解记录下来，供后来者参考。
 本文是eBPF系列的第一篇：hello eBPF。
-若对Linux tracing技术不清晰，可参考前置篇[the Overview of Linux Tracing Tools](/Appendix/1-the-Overview-of-Linux-Trace-Techonoly.md)。
+
+- 若对Linux tracing技术不清晰，可参考前置篇[the Overview of Linux Tracing Tools](/Appendix/1-the-Overview-of-Linux-Trace-Techonoly.md)
 
 ## Overview
 
 先写了一个eBPF例子，它能够在每次进行系统调用`clone()`时打印一行`Hello eBPF!`，并说明eBPF程序怎么从源码到执行的。
-
 再写了点eBPF执行的内幕，包括两点：
 
 1. eBPF怎么检查内存访问的
