@@ -96,7 +96,7 @@ out:
 Linux kernel v5.3介绍了定义eBPF map的新语法，称为BTF-defined maps，格式如`ringbuf`的定义，有两点变化：
 
 1. `SEC(maps)`变为`SEC(.maps)`
-2. 使用macro `__uint(type, xxx) / __type(key, xxx) / __type(value, xxx) / __uint(max_entries, xxx)`来替代原有的`.type=xxx / .key_size=xxx / .value=xxx / .max_entries=xxx
+2. 使用macro `__uint(type, xxx) / __type(key, xxx) / __type(value, xxx) / __uint(max_entries, xxx)`来替代原有的`.type=xxx / .key_size=xxx / .value=xxx / .max_entries=xxx`
 
 原有的eBPF map写法被称为legancy mode。
 
