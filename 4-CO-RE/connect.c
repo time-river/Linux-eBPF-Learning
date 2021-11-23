@@ -88,7 +88,6 @@ int main(int argc, char *argv[]) {
 
 	connect_kern__detach(skel);
 	ring_buffer__free(rb);
-	bpf_link__destroy(skel->links.hello);
 cleanup:
 	connect_kern__destroy(skel);
 	return 0;
